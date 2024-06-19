@@ -588,6 +588,13 @@ public sealed partial class DiscordClient
                 await OnEntitlementCreatedAsync(dat.ToDiscordObject<DiscordEntitlement>());
                 break;
                 
+            case "entitlement_update":
+                await OnEntitlementUpdatedAsync(dat.ToDiscordObject<DiscordEntitlement>());
+                break;
+            
+            case "entitlement_delete":
+                await OnEntitlementDeletedAsync(dat.ToDiscordObject<DiscordEntitlement>());
+                break;
 
             #endregion
         }
