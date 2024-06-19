@@ -582,6 +582,14 @@ public sealed partial class DiscordClient
                 await OnAutoModerationRuleExecutedAsync(dat.ToDiscordObject<DiscordAutoModerationActionExecution>());
                 break;
                 #endregion
+            
+            #region MyRegion
+            case "entitlement_create":
+                await OnEntitlementCreatedAsync(dat.ToDiscordObject<DiscordEntitlement>());
+                break;
+                
+
+            #endregion
         }
     }
 
@@ -2837,6 +2845,31 @@ public sealed partial class DiscordClient
             Rule = ruleExecuted
         });
     }
+    #endregion
+
+    #region Entitlements
+    
+    private async Task OnEntitlementCreatedAsync(DiscordEntitlement entitlement)
+    {
+        await this.events[typeof(EntitlementCreatedEventArgs)]
+            .As<EntitlementCreatedEventArgs>()
+            .InvokeAsync(this, new EntitlementCreatedEventArgs { Entitlement = entitlement });
+    }
+    
+    private async Task OnEntitlementUpdatedAsync(DiscordEntitlement entitlement)
+    {
+        await this.events[typeof(EntitlementUpdatedEventArgs)]
+            .As<EntitlementUpdatedEventArgs>()
+            .InvokeAsync(this, new EntitlementUpdatedEventArgs { Entitlement = entitlement });
+    }
+    
+    private async Task OnEntitlementDeletedAsync(DiscordEntitlement entitlement)
+    {
+        await this.events[typeof(EntitlementDeletedEventArgs)]
+            .As<EntitlementDeletedEventArgs>()
+            .InvokeAsync(this, new EntitlementDeletedEventArgs { Entitlement = entitlement });
+    }
+
     #endregion
 
     #endregion
