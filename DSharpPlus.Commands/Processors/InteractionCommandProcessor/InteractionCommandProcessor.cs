@@ -4,16 +4,15 @@ using System.Collections.Generic;
 using System.ComponentModel;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
-using System.Globalization;
 using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
-
 using DSharpPlus.Commands.ArgumentModifiers;
 using DSharpPlus.Commands.ContextChecks;
 using DSharpPlus.Commands.EventArgs;
 using DSharpPlus.Commands.Exceptions;
+using DSharpPlus.Commands.Processors.SlashCommands;
 using DSharpPlus.Commands.Processors.SlashCommands.ArgumentModifiers;
 using DSharpPlus.Commands.Processors.SlashCommands.Localization;
 using DSharpPlus.Commands.Processors.SlashCommands.Metadata;
@@ -21,17 +20,17 @@ using DSharpPlus.Commands.Trees;
 using DSharpPlus.Commands.Trees.Metadata;
 using DSharpPlus.Entities;
 using DSharpPlus.EventArgs;
-
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 
-namespace DSharpPlus.Commands.Processors.SlashCommands;
+namespace DSharpPlus.Commands.Processors.Interactions;
 
-public sealed partial class SlashCommandProcessor : BaseCommandProcessor<InteractionCreatedEventArgs, ISlashArgumentConverter, InteractionConverterContext, SlashCommandContext>
+public sealed partial class InteractionCommandProcessor : BaseCommandProcessor<InteractionCreatedEventArgs, ISlashArgumentConverter, InteractionConverterContext, SlashCommandContext>
 {
     // Required for GuildDownloadCompleted event
     public const DiscordIntents RequiredIntents = DiscordIntents.Guilds;
+    public static IReadOnlyDictionary<ulong, InteractionCommandMapper> ApplicationCommandMappings => applicationCommandMappings;
 
     public IReadOnlyDictionary<Type, DiscordApplicationCommandOptionType> TypeMappings { get; private set; } = new Dictionary<Type, DiscordApplicationCommandOptionType>();
     public IReadOnlyDictionary<ulong, Command> ApplicationCommandMapping => applicationCommandMapping;
@@ -253,35 +252,17 @@ public sealed partial class SlashCommandProcessor : BaseCommandProcessor<Interac
         }
 
         Dictionary<ulong, Command> commandsDictionary = [];
-        IReadOnlyList<Command> flattenCommands = processorSpecificCommands.SelectMany(x => x.Flatten()).ToList();
         foreach (DiscordApplicationCommand discordCommand in discordCommands)
         {
             bool commandFound = false;
-
-            if (discordCommand.Type is DiscordApplicationCommandType.MessageContextMenu
-                                    or DiscordApplicationCommandType.UserContextMenu)
+            foreach (Command command in processorSpecificCommands)
             {
-                foreach (Command command in flattenCommands)
+                string snakeCaseCommandName = ToSnakeCase(command.Name);
+                if (snakeCaseCommandName == ToSnakeCase(discordCommand.Name) || ToSnakeCase(command.Attributes.OfType<DisplayNameAttribute>().FirstOrDefault()?.DisplayName) == snakeCaseCommandName)
                 {
-                    if (command.FullName == discordCommand.Name || command.Attributes.OfType<DisplayNameAttribute>().FirstOrDefault()?.DisplayName == discordCommand.Name)
-                    {
-                        commandsDictionary.Add(discordCommand.Id, command);
-                        commandFound = true;
-                        break;
-                    }
-                }
-            }
-            else
-            {
-                foreach (Command command in processorSpecificCommands)
-                {
-                    string snakeCaseCommandName = ToSnakeCase(command.Name);
-                    if (snakeCaseCommandName == ToSnakeCase(discordCommand.Name) || ToSnakeCase(command.Attributes.OfType<DisplayNameAttribute>().FirstOrDefault()?.DisplayName) == snakeCaseCommandName)
-                    {
-                        commandsDictionary.Add(discordCommand.Id, command);
-                        commandFound = true;
-                        break;
-                    }
+                    commandsDictionary.Add(discordCommand.Id, command);
+                    commandFound = true;
+                    break;
                 }
             }
 
@@ -292,7 +273,7 @@ public sealed partial class SlashCommandProcessor : BaseCommandProcessor<Interac
         }
 
         applicationCommandMapping = commandsDictionary.ToFrozenDictionary();
-        SlashLogging.registeredCommands(this.logger, this.ApplicationCommandMapping.Count, this.ApplicationCommandMapping.Values.SelectMany(command => command.Flatten()).Count(), null);
+        SlashLogging.registeredCommands(this.logger, this.ApplicationCommandMapping.Count, this.ApplicationCommandMapping.Values.SelectMany(command => command.Walk()).Count(), null);
     }
 
 
