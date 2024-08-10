@@ -443,12 +443,12 @@ public sealed class CommandsExtension : BaseExtension
         {
             await userProcessor.ConfigureAsync(this);
         }
-        
+
         if (this.processors.TryGetValue(typeof(MessageCommandProcessor), out ICommandProcessor messageProcessor))
         {
             await messageProcessor.ConfigureAsync(this);
         }
-        
+
         foreach (ICommandProcessor processor in this.processors.Values)
         {
             Type type = processor.GetType();
@@ -456,7 +456,7 @@ public sealed class CommandsExtension : BaseExtension
             {
                 continue;
             }
-            
+
             await processor.ConfigureAsync(this);
         }
     }
