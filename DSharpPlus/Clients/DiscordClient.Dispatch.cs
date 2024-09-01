@@ -583,7 +583,7 @@ public sealed partial class DiscordClient
                 break;
                 #endregion
             
-            #region MyRegion
+            #region Entitlements
             case "entitlement_create":
                 await OnEntitlementCreatedAsync(dat.ToDiscordObject<DiscordEntitlement>());
                 break;
